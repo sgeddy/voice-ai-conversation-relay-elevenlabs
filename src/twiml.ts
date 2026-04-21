@@ -14,7 +14,7 @@ export function conversationRelayTwiml(opts: { wsUrl: string }): string {
   <Connect>
     <ConversationRelay
       url="${opts.wsUrl}"
-      welcomeGreeting="Hi, you've reached the voice AI reference. This is a scaffold — the LLM and TTS integrations ship in later milestones."
+      welcomeGreeting="Hi, I'm a voice AI assistant. How can I help you today?"
       language="en-US"
     />
   </Connect>
