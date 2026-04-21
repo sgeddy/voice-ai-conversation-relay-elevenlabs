@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
+import formbodyPlugin from '@fastify/formbody';
 import { config } from './config.js';
 import { logger } from './logger.js';
 import { conversationRelayTwiml, crWebsocketUrl } from './twiml.js';
@@ -8,6 +9,10 @@ import { handleConversationRelayConnection } from './cr-handler.js';
 async function buildServer() {
   const app = Fastify({ loggerInstance: logger });
 
+  // Twilio webhooks are application/x-www-form-urlencoded. Fastify doesn't
+  // parse that content-type by default, so without this plugin /twiml returns
+  // 415 Unsupported Media Type.
+  await app.register(formbodyPlugin);
   await app.register(websocketPlugin);
 
   app.get('/healthz', async () => ({ ok: true }));
