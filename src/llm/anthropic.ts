@@ -26,19 +26,27 @@ export interface LlmStreamEvent {
 /**
  * Stream a Claude response for the given conversation history.
  * Yields text deltas as they arrive, followed by a single 'done' event.
+ *
+ * Pass an AbortSignal to cancel the in-flight request. When aborted, the
+ * underlying stream is cancelled; the generator also breaks out of its
+ * loop on the next iteration.
  */
 export async function* streamClaudeResponse(
   messages: MessageParam[],
-  opts: { system?: string; maxTokens?: number } = {},
+  opts: { system?: string; maxTokens?: number; signal?: AbortSignal } = {},
 ): AsyncGenerator<LlmStreamEvent, void, void> {
-  const stream = getClient().messages.stream({
-    model: config.anthropic.model,
-    max_tokens: opts.maxTokens ?? 512,
-    system: opts.system ?? DEFAULT_SYSTEM,
-    messages,
-  });
+  const stream = getClient().messages.stream(
+    {
+      model: config.anthropic.model,
+      max_tokens: opts.maxTokens ?? 512,
+      system: opts.system ?? DEFAULT_SYSTEM,
+      messages,
+    },
+    opts.signal ? { signal: opts.signal } : undefined,
+  );
 
   for await (const event of stream) {
+    if (opts.signal?.aborted) break;
     if (
       event.type === 'content_block_delta' &&
       event.delta.type === 'text_delta' &&
