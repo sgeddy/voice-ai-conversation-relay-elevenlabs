@@ -17,12 +17,24 @@ export const config = {
 
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY ?? '',
-    model: optional('ANTHROPIC_MODEL', 'claude-opus-4-7'),
+    // Haiku 4.5 is the default — best cost/latency profile for real-time
+    // voice. Swap ANTHROPIC_MODEL to claude-sonnet-4-6 or claude-opus-4-7
+    // if you need more reasoning depth and can absorb the latency hit.
+    model: optional('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
   },
 
   elevenlabs: {
     apiKey: process.env.ELEVENLABS_API_KEY ?? '',
-    voiceId: process.env.ELEVENLABS_VOICE_ID ?? '',
+    // ElevenLabs voice ID rendered by CR's internal TTS pipeline. Defaults
+    // to Twilio's bundled ElevenLabs voice when unset. Override with any
+    // voice available in your ElevenLabs / Twilio ElevenLabs integration.
+    voiceId: process.env.ELEVENLABS_VOICE_ID || 'UgBBYS2sOqTuMpoF3BR0',
+  },
+
+  // Conversation Relay STT provider. "Deepgram" is CR's default for new
+  // accounts and typically has lower latency than "Google".
+  transcription: {
+    provider: optional('TRANSCRIPTION_PROVIDER', 'Deepgram'),
   },
 
   twilio: {

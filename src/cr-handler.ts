@@ -87,7 +87,7 @@ export function handleConversationRelayConnection(socket: WebSocket): void {
     });
 
     let firstTokenSeen = false;
-    let audioFirstByteOutLogged = false;
+    let firstTextSentToCr = false;
     let assistantText = '';
 
     try {
@@ -104,16 +104,19 @@ export function handleConversationRelayConnection(socket: WebSocket): void {
           }
           assistantText += ev.text;
           send({ type: 'text', token: ev.text, last: false });
-          if (!audioFirstByteOutLogged) {
-            // For M1b we treat "first text sent to CR" as the first-audio-out
-            // signal — CR's native TTS handles actual audio generation.
-            // M1c swaps this for the real ElevenLabs first-byte timestamp.
-            audioFirstByteOutLogged = true;
+          if (!firstTextSentToCr) {
+            // App-level instrumentation ends here for CR-mode: we measure the
+            // moment the first TTS-bound text leaves our process and enters
+            // Conversation Relay. CR's internal path from text → ElevenLabs
+            // → audio-to-caller is opaque to the app. See docs/architecture.md
+            // under "Observability boundaries". Full pipeline instrumentation
+            // lives in the future Media Streams companion repo.
+            firstTextSentToCr = true;
             turnLog.info({
-              event: 'turn.audio.first_byte_out',
+              event: 'turn.tts.first_token_sent',
               latency_from_turn_start_ms: now - turnStartedAt,
               ts: now,
-              note: 'CR native TTS — ElevenLabs swap is M1c',
+              provider: 'ElevenLabs (via CR)',
             });
           }
         } else if (ev.type === 'done') {

@@ -28,27 +28,43 @@
 
 ## Instrumentation
 
-Every turn emits timestamped structured events. Correlation via `turn_id`:
+Every turn emits timestamped structured events. Correlation via `turn_id`. Events currently emitted in CR mode:
 
 ```json
-{
-  "event": "turn.started",         "turn_id": "…", "session_id": "…", "ts": 0 }
-{ "event": "turn.stt.partial",     "turn_id": "…", "text": "…", "confidence": 0.91, "ts": 120 }
-{ "event": "turn.stt.final",       "turn_id": "…", "text": "…", "confidence": 0.95, "utterance_duration_ms": 1400, "ts": 340 }
-{ "event": "turn.llm.request_sent","turn_id": "…", "model": "claude-opus-4-7", "prompt_tokens": 820, "ts": 345 }
-{ "event": "turn.llm.first_token", "turn_id": "…", "latency_from_final_ms": 420, "ts": 765 }
-{ "event": "turn.tts.request_sent","turn_id": "…", "provider": "elevenlabs", "ts": 765 }
-{ "event": "turn.tts.first_byte",  "turn_id": "…", "provider": "elevenlabs", "latency_ms": 280, "ts": 1045 }
-{ "event": "turn.audio.first_byte_out", "turn_id": "…", "latency_from_final_ms": 720, "ts": 1065 }
-{ "event": "turn.completed",       "turn_id": "…", "total_latency_ms": 720, "ts": 1065 }
+{ "event": "turn.started",              "turn_id": "…", "session_id": "…", "text": "…", "ts": 0 }
+{ "event": "turn.llm.request_sent",     "turn_id": "…", "model": "claude-haiku-4-5-20251001", "prompt_messages": 3, "ts": 5 }
+{ "event": "turn.llm.first_token",      "turn_id": "…", "latency_from_turn_start_ms": 420, "ts": 425 }
+{ "event": "turn.tts.first_token_sent", "turn_id": "…", "provider": "ElevenLabs (via CR)", "latency_from_turn_start_ms": 425, "ts": 425 }
+{ "event": "turn.llm.stream_complete",  "turn_id": "…", "response_length": 142, "latency_from_turn_start_ms": 980, "ts": 985 }
+{ "event": "turn.completed",            "turn_id": "…", "total_latency_ms": 985, "ts": 985 }
 ```
 
-## Derived metrics
+Additional events surfaced from CR and session lifecycle:
 
-- `response_latency_ms` = `audio.first_byte_out.ts − stt.final.ts`
-- `llm_latency_ms` = `llm.first_token.ts − llm.request_sent.ts`
-- `tts_latency_ms` = `tts.first_byte.ts − tts.request_sent.ts`
-- `interrupt_response_ms` = time between caller speech detected and agent audio halt
+```json
+{ "event": "session.opened", "session_id": "…" }
+{ "event": "cr.setup",       "from": "…", "to": "…", "direction": "inbound" }
+{ "event": "cr.prompt",      "text": "…", "last": true, "lang": "en-US" }
+{ "event": "cr.dtmf",        "digit": "1" }
+{ "event": "turn.interrupted", "utteranceUntilInterrupt": "…" }
+{ "event": "session.closed", "code": 1000, "reason": "…" }
+{ "event": "session.error",  "err": { "message": "…" } }
+```
+
+## Derived metrics (app-measurable in CR mode)
+
+- `llm_first_token_latency_ms` = `turn.llm.first_token.ts − turn.llm.request_sent.ts`
+- `llm_full_response_latency_ms` = `turn.llm.stream_complete.ts − turn.llm.request_sent.ts`
+- `app_to_cr_handoff_ms` = `turn.tts.first_token_sent.ts − turn.llm.first_token.ts` (typically < 5ms — local WebSocket write)
+- `total_turn_latency_ms` = `turn.completed.ts − turn.started.ts`
+
+## Not directly measurable in CR mode
+
+- `cr_tts_latency_ms` — CR → ElevenLabs → audio-to-caller is opaque. Approximate with out-of-band direct ElevenLabs API calls in the benchmark harness, or switch to Media Streams for full pipeline visibility.
+- `actual_first_audio_byte_to_caller` — same reason.
+- `stt_latency_ms` — CR emits `prompt` messages without internal STT timing.
+
+See [architecture.md § Observability boundaries](./architecture.md) for the full explanation.
 
 ## Benchmark methodology
 
