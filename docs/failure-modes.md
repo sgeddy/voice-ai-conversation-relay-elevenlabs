@@ -125,3 +125,15 @@ This catalog is the operations runbook for the reference architecture. Every ent
 - **Detection:** Running latency measurement; if projected response > 3s.
 - **Mitigation:** Filler strategy — speak an acknowledgment (`"Let me check that for you"`) while generating the real response.
 - **Repro:** Inject artificial latency into the LLM client.
+
+## 15. [ ] User requests playback speed adjustment ("talk faster" / "slow down")
+
+- **Trigger:** Caller asks the agent to change its speaking pace mid-conversation.
+- **Symptom:** Agent verbally agrees ("sure, I'll ease up") but the actual TTS playback rate doesn't change. Caller perceives the agent as failing to follow a simple instruction.
+- **Detection:** No automated detection — this is a UX limitation surfaced through caller behavior. Listen for repeated speed requests in transcripts.
+- **Mitigation (real options):**
+  - **Adjust verbosity, not pace.** Push the system prompt to bias toward shorter responses on "talk faster" and longer/more deliberate phrasing on "slow down". Verbosity is what callers actually feel.
+  - **Swap voice on the fly.** Different ElevenLabs voices have different default speaking rates. Map "faster" / "slower" intents to a small set of pre-selected voices via CR's `language` / voice-config message at runtime.
+  - **Surface the limitation honestly.** Have the agent acknowledge that it can't change speaking rate but offer to be more concise or more deliberate. Better than promising what it can't deliver.
+- **Why this is hard:** Conversation Relay's text-mode interface doesn't expose SSML rate controls or runtime ElevenLabs `voice_settings.speed` overrides. To actually control playback rate per turn you'd need to swap to Media Streams and drive the ElevenLabs API directly with `voice_settings.speed` per request. That's the future companion repo.
+- **Repro:** Make a real call. Ask "talk faster" mid-conversation. Observe the agent's response is the same speaking rate as before.

@@ -201,6 +201,9 @@ function report(turns: TurnSummary[]): string {
   const llmFirstTokens = completed
     .map((t) => t.llmFirstTokenMs)
     .filter((v): v is number => v !== null);
+  const ttsFirstTokenSent = completed
+    .map((t) => t.ttsFirstTokenSentMs)
+    .filter((v): v is number => v !== null);
   const totalLatencies = completed
     .map((t) => t.totalLatencyMs)
     .filter((v): v is number => v !== null);
@@ -216,6 +219,13 @@ function report(turns: TurnSummary[]): string {
   out.push(`    incomplete:       ${incomplete.length}`);
   out.push('');
 
+  if (completed.length < 20) {
+    out.push(`  ⚠ Sample size n=${completed.length} is too small for stable percentiles.`);
+    out.push(`    Treat p50/p95 as directional, not measured. Run M2's 50-call benchmark`);
+    out.push(`    harness for statistically meaningful numbers.`);
+    out.push('');
+  }
+
   if (llmFirstTokens.length > 0) {
     out.push(`  LLM first-token latency (n=${llmFirstTokens.length}):`);
     out.push(`    p50:              ${fmtMs(percentile(llmFirstTokens, 50))}`);
@@ -224,17 +234,30 @@ function report(turns: TurnSummary[]): string {
     out.push('');
   }
 
+  if (ttsFirstTokenSent.length > 0) {
+    out.push(`  Time to first TTS-bound text leaving app (n=${ttsFirstTokenSent.length}):`);
+    out.push(`    This is the app-measurable proxy for "first audio byte to caller".`);
+    out.push(`    CR adds ~200-400 ms of opaque ElevenLabs round-trip on top.`);
+    out.push(`    p50:              ${fmtMs(percentile(ttsFirstTokenSent, 50))}`);
+    out.push(`    p95:              ${fmtMs(percentile(ttsFirstTokenSent, 95))}`);
+    out.push(`    max:              ${fmtMs(Math.max(...ttsFirstTokenSent))}`);
+    out.push('');
+    out.push(`  Targets (perceived response latency): p50 < 1500 ms, p95 < 2500 ms`);
+    out.push(`    See docs/latency-budget.md.`);
+    const p50 = percentile(ttsFirstTokenSent, 50);
+    const p95 = percentile(ttsFirstTokenSent, 95);
+    if (p50 !== null) out.push(`    p50 status:       ${p50 < 1500 ? '✓ within target' : `✗ over by ${Math.round(p50 - 1500)} ms`}`);
+    if (p95 !== null) out.push(`    p95 status:       ${p95 < 2500 ? '✓ within target' : `✗ over by ${Math.round(p95 - 2500)} ms`}`);
+    out.push('');
+  }
+
   if (totalLatencies.length > 0) {
-    out.push(`  Total turn latency (n=${totalLatencies.length}):`);
+    out.push(`  Total turn stream completion (n=${totalLatencies.length}, informational):`);
+    out.push(`    Full Claude response stream end-to-end. Scales with response length.`);
+    out.push(`    Not directly compared to budget (budget is for first-byte, not last-byte).`);
     out.push(`    p50:              ${fmtMs(percentile(totalLatencies, 50))}`);
     out.push(`    p95:              ${fmtMs(percentile(totalLatencies, 95))}`);
     out.push(`    max:              ${fmtMs(Math.max(...totalLatencies))}`);
-    out.push('');
-    out.push(`  Targets: p50 < 1500 ms, p95 < 2500 ms (per docs/latency-budget.md)`);
-    const p50 = percentile(totalLatencies, 50);
-    const p95 = percentile(totalLatencies, 95);
-    if (p50 !== null) out.push(`    p50 status:       ${p50 < 1500 ? '✓ within target' : '✗ over target'}`);
-    if (p95 !== null) out.push(`    p95 status:       ${p95 < 2500 ? '✓ within target' : '✗ over target'}`);
   }
 
   return out.join('\n');

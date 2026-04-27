@@ -27,9 +27,11 @@ Two analysis paths feed this section:
 
 ### M1e ad-hoc captures
 
-| Run date | Calls | Turns | LLM 1st-token p50 | Total p50 | Total p95 | Notes |
+The "TTS-sent p50/p95" column is the app-measurable proxy for "first audio byte to caller" (= time from `turn.started` to first text leaving the app for CR's TTS pipeline). CR adds ~200-400 ms of opaque ElevenLabs round-trip on top before the caller actually hears audio.
+
+| Run date | Calls | Turns | LLM 1st-token p50 | TTS-sent p50 | TTS-sent p95 | Notes |
 |---|---|---|---|---|---|---|
-| TBD | 1 | — | — | — | — | First real-call validation pending |
+| 2026-04-27 | 1 | 5 | 1523 ms | 1523 ms | 2278 ms | First validation. n=5 — directional only. p95 within 2500 ms target ✓; p50 over 1500 ms target by 23 ms. LLM first-token is ~2× expected for Haiku 4.5; suspected ngrok/network/sample-noise. Re-evaluate with M2's 50-call run. Barge-in cancellation worked correctly (separate call). |
 
 ### M2 benchmark runs
 

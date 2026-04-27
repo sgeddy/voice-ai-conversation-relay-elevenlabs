@@ -12,11 +12,14 @@ A public, inspectable reference implementation of a low-latency real-time voice 
 - [x] **M1b** — Anthropic Claude streaming integration. CR `prompt { last: true }` triggers a streamed response forwarded to CR for native-TTS playback. Session state via in-memory `Map` (adapter-shaped for Redis swap).
 - [x] **M1c** — Explicit ElevenLabs TTS via TwiML `ttsProvider`/`voice` attributes. Default model swapped Opus 4.7 → Haiku 4.5 for voice latency. Observability boundaries documented (CR's internal TTS pipeline is opaque to the app).
 - [x] **M1d** — `TurnManager` extraction with AbortController-based cancellation. CR `interrupt` events now actually halt the in-flight LLM stream. History-alternation invariant preserved on cancellation.
-- [ ] **M1e** — End-to-end real-call validation:
-  - [x] Log analyzer (`scripts/parse-logs.ts`, `npm run analyze`) — groups events by `turn_id`, computes per-turn latencies, p50/p95 aggregates, target-budget comparison
-  - [ ] One real 3-minute happy-path call captured and analyzed
-  - [ ] One real call exercising barge-in captured and analyzed
-  - [ ] First measurements added to [latency-budget.md § Measured results](./latency-budget.md)
+- [x] **M1e** — End-to-end real-call validation:
+  - [x] Log analyzer (`scripts/parse-logs.ts`, `npm run analyze`) — groups events by `turn_id`, computes per-turn latencies, p50/p95 aggregates against the perceived-latency budget (TTS-sent), with sample-size caveat
+  - [x] Real 5-turn call captured + analyzed (2026-04-27)
+  - [x] Barge-in exercised on a separate real call — cancellation confirmed working
+  - [x] First measurements added to [latency-budget.md § M1e ad-hoc captures](./latency-budget.md)
+  - [x] One UX limitation surfaced and documented in [failure-modes.md #15 (playback speed)](./failure-modes.md)
+
+**M1 complete.** All five sub-milestones shipped. Next: M2 (benchmark harness) for statistically meaningful latency numbers and to investigate whether the high LLM first-token latency seen in M1e is reproducible or sample noise.
 
 ### M2 — Benchmark harness + first numbers (week 2–3)
 
