@@ -1,10 +1,10 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
     "noEmit": true,
     "outDir": "./.tsbuildtemp",
     "types": ["node"]
   },
-  "include": ["./**/*"]
+  "include": ["scripts/**/*", "bench/**/*", "src/**/*"]
 }

@@ -82,7 +82,34 @@ NODE_ENV=production npm run dev > /tmp/voice-ai.log 2>&1 &
 npm run analyze /tmp/voice-ai.log
 ```
 
-The analyzer (`scripts/parse-logs.ts`) groups events by `turn_id`, computes LLM first-token latency, total turn latency, and barge-in cancellation outcomes, and prints a per-turn report plus an aggregate against the budget targets.
+The analyzer (`scripts/parse-logs.ts`) groups events by `turn_id`, computes LLM first-token latency, the app-measurable proxy for first-audio-byte-to-caller, and barge-in cancellation outcomes. Compares against the documented budget. Warns when sample size is too small for stable percentiles.
+
+## Benchmark — synthetic 50-call run
+
+The bench harness uses the Twilio REST API to place real calls against the agent and walk a scripted conversation via `<Say>` injected through `calls.update()`. Real Twilio audio, real STT, real LLM, real TTS — measurable latency at scale.
+
+**Prereqs:**
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` in `.env`
+- `TWILIO_PHONE_NUMBER` — the bench's "from" number (your test number)
+- `BENCH_AGENT_NUMBER` — the agent's destination number (the one with the CR webhook)
+- Agent server running with `NODE_ENV=production` so logs are JSONL
+
+**Cost:** ~$0.04 per call (Twilio voice). 50 calls ≈ $2.
+
+```bash
+# 1. Capture agent logs
+NODE_ENV=production npm run dev > /tmp/voice-ai.log 2>&1 &
+
+# 2. Run the bench
+npm run bench -- --calls 50 --concurrency 5
+# → writes /tmp/bench-run-<timestamp>.json with all call SIDs
+
+# 3. Filter agent logs to just the bench's calls and analyze
+MANIFEST=/tmp/bench-run-<timestamp>.json
+jq -r '.callSids[]' "$MANIFEST" | grep -F -f /dev/stdin /tmp/voice-ai.log | npm run analyze
+```
+
+The manifest captures call SIDs, script, and timing so individual runs are reproducible and comparable across regressions.
 
 ## Failure modes
 

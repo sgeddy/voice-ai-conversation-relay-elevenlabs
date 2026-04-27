@@ -42,6 +42,12 @@ export const config = {
     authToken: process.env.TWILIO_AUTH_TOKEN ?? '',
     phoneNumber: process.env.TWILIO_PHONE_NUMBER ?? '',
   },
+
+  // Benchmark harness — used by `npm run bench` to place synthetic calls.
+  // The bench's "from" is twilio.phoneNumber; "to" is bench.agentNumber.
+  bench: {
+    agentNumber: process.env.BENCH_AGENT_NUMBER ?? '',
+  },
 } as const;
 
 export { required };

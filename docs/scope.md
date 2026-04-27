@@ -21,12 +21,22 @@ A public, inspectable reference implementation of a low-latency real-time voice 
 
 **M1 complete.** All five sub-milestones shipped. Next: M2 (benchmark harness) for statistically meaningful latency numbers and to investigate whether the high LLM first-token latency seen in M1e is reproducible or sample noise.
 
-### M2 — Benchmark harness + first numbers (week 2–3)
+### M2 — Benchmark harness + first numbers
 
-- [ ] Synthetic-call harness using Twilio REST
-- [ ] Harness initiates 50 calls with canned utterances
-- [ ] Report generator: p50, p95, p99 per metric; per-turn breakdown
-- [ ] First published benchmark numbers added to [latency-budget.md](./latency-budget.md)
+- [x] Synthetic-call harness using Twilio REST (`bench/runner.ts`, `npm run bench`).
+      Places real calls via `twilio.calls.create()`, scripts utterances by
+      using `calls.update()` to inject `<Say>` blocks. No bench-side webhook
+      required — the agent's normal CR webhook runs unchanged.
+- [x] Concurrent execution with worker-pool throttling. Manifest output
+      (`/tmp/bench-run-<timestamp>.json`) captures call SIDs, script, timing.
+- [x] Reporting via the existing `npm run analyze` filtered through
+      `jq`-extracted manifest SIDs. The analyzer's small-sample warning
+      drops away naturally at 50-call scale.
+- [ ] First 50-call run captured and numbers added to
+      [latency-budget.md § M2 benchmark runs](./latency-budget.md).
+- [ ] Investigate the M1e LLM first-token outlier — was it ngrok, sample
+      noise, or systemic? With 50 calls × ~4 turns = ~200 turns of LLM
+      first-token data, the picture should clarify.
 
 ### M3 — Failure-mode coverage (week 3–5)
 
