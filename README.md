@@ -66,6 +66,24 @@ ngrok http 3000
 
 See [docs/latency-budget.md](./docs/latency-budget.md) for per-hop breakdown and measured results.
 
+## Analyze a call
+
+Capture a real call's structured logs, then run them through the analyzer:
+
+```bash
+# 1. Run the server in production mode so pino emits raw JSON
+NODE_ENV=production npm run dev > /tmp/voice-ai.log 2>&1 &
+
+# 2. Make a real call through your Twilio number
+#    (have a 3-minute happy-path conversation; try a barge-in too)
+# 3. Stop the server (Ctrl+C / kill)
+
+# 4. Compute per-turn latencies + p50/p95
+npm run analyze /tmp/voice-ai.log
+```
+
+The analyzer (`scripts/parse-logs.ts`) groups events by `turn_id`, computes LLM first-token latency, total turn latency, and barge-in cancellation outcomes, and prints a per-turn report plus an aggregate against the budget targets.
+
 ## Failure modes
 
 Cataloged in [docs/failure-modes.md](./docs/failure-modes.md) with trigger, symptom, detection, mitigation, and repro for each:

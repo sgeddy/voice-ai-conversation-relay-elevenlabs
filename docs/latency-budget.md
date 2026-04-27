@@ -20,11 +20,22 @@
 
 ## Measured results
 
-*To be populated by the benchmark harness after first runs.*
+Two analysis paths feed this section:
+
+1. **M1e validation** — single real-call captures, parsed via `scripts/parse-logs.ts` (`npm run analyze`). Honest n=1-to-few; useful for sanity-checking the pipeline behaves as expected.
+2. **M2 benchmark harness** — synthetic 50-call runs with controlled utterances. Statistically meaningful p50/p95/p99.
+
+### M1e ad-hoc captures
+
+| Run date | Calls | Turns | LLM 1st-token p50 | Total p50 | Total p95 | Notes |
+|---|---|---|---|---|---|---|
+| TBD | 1 | — | — | — | — | First real-call validation pending |
+
+### M2 benchmark runs
 
 | Run date | Calls | p50 | p95 | Notes |
 |---|---|---|---|---|
-| TBD | 50 | — | — | Initial baseline |
+| TBD | 50 | — | — | Awaiting M2 harness |
 
 ## Instrumentation
 

@@ -6,14 +6,17 @@ A public, inspectable reference implementation of a low-latency real-time voice 
 
 ## Milestones
 
-### M1 — Happy-path conversation + instrumentation (week 1–2)
+### M1 — Happy-path conversation + instrumentation
 
-- [ ] Repo scaffold, TypeScript + Fastify setup
-- [ ] WebSocket server accepts Conversation Relay connections
-- [ ] Claude integration — streaming responses
-- [ ] ElevenLabs integration — streaming TTS
-- [ ] Structured logging via pino with the full event schema ([see latency-budget.md](./latency-budget.md))
-- [ ] 3-minute happy-path conversation works end-to-end over a real phone call
+- [x] **M1a** — Repo scaffold, TypeScript + Fastify, `/twiml` endpoint, `/cr` WebSocket acceptor logging CR protocol messages.
+- [x] **M1b** — Anthropic Claude streaming integration. CR `prompt { last: true }` triggers a streamed response forwarded to CR for native-TTS playback. Session state via in-memory `Map` (adapter-shaped for Redis swap).
+- [x] **M1c** — Explicit ElevenLabs TTS via TwiML `ttsProvider`/`voice` attributes. Default model swapped Opus 4.7 → Haiku 4.5 for voice latency. Observability boundaries documented (CR's internal TTS pipeline is opaque to the app).
+- [x] **M1d** — `TurnManager` extraction with AbortController-based cancellation. CR `interrupt` events now actually halt the in-flight LLM stream. History-alternation invariant preserved on cancellation.
+- [ ] **M1e** — End-to-end real-call validation:
+  - [x] Log analyzer (`scripts/parse-logs.ts`, `npm run analyze`) — groups events by `turn_id`, computes per-turn latencies, p50/p95 aggregates, target-budget comparison
+  - [ ] One real 3-minute happy-path call captured and analyzed
+  - [ ] One real call exercising barge-in captured and analyzed
+  - [ ] First measurements added to [latency-budget.md § Measured results](./latency-budget.md)
 
 ### M2 — Benchmark harness + first numbers (week 2–3)
 
