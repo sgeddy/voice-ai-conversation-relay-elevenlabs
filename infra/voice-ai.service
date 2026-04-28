@@ -1,0 +1,33 @@
+[Unit]
+Description=voice-ai-conversation-relay-elevenlabs (Fastify + Conversation Relay)
+Documentation=https://github.com/sgeddy/voice-ai-conversation-relay-elevenlabs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=voiceai
+Group=voiceai
+WorkingDirectory=/opt/voice-ai
+EnvironmentFile=/etc/voice-ai.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=voice-ai
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/voice-ai
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

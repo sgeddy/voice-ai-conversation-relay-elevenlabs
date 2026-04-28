@@ -1,0 +1,21 @@
+{
+	# Global options.
+	# admin endpoint disabled — we don't run `caddy reload` over HTTP locally.
+	admin off
+	email samuelgeddy@gmail.com
+}
+
+voice-ai.samueleddy.com {
+	encode gzip zstd
+
+	# Conversation Relay opens a WebSocket from Twilio's edge. reverse_proxy
+	# in Caddy v2 transparently forwards Upgrade/Connection and
+	# X-Forwarded-* headers, so the same directive handles both HTTP and WS.
+	reverse_proxy localhost:3000
+
+	log {
+		output stderr
+		format console
+		level INFO
+	}
+}
