@@ -10,10 +10,25 @@ function optional(name: string, fallback: string): string {
   return process.env[name] ?? fallback;
 }
 
+function bool(name: string, fallback: boolean): boolean {
+  const raw = process.env[name];
+  if (raw === undefined) return fallback;
+  return raw === 'true' || raw === '1' || raw === 'yes';
+}
+
 export const config = {
   port: Number(optional('PORT', '3000')),
   publicBaseUrl: optional('PUBLIC_BASE_URL', ''),
   logLevel: optional('LOG_LEVEL', 'info'),
+
+  // Voice AI handling gates. SERVICE_ACTIVE=false makes /twiml return 503 and
+  // refuses CR WebSocket upgrades — useful for "soft-disable" without stopping
+  // the host. DEV_BYPASS_SIGNATURE skips Twilio webhook signature validation
+  // for local curl-based smoke tests; MUST be false in production.
+  service: {
+    active: bool('SERVICE_ACTIVE', true),
+    devBypassSignature: bool('DEV_BYPASS_SIGNATURE', false),
+  },
 
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY ?? '',

@@ -111,6 +111,41 @@ jq -r '.callSids[]' "$MANIFEST" | grep -F -f /dev/stdin /tmp/voice-ai.log | npm 
 
 The manifest captures call SIDs, script, and timing so individual runs are reproducible and comparable across regressions.
 
+## Production / security
+
+The `/twiml` webhook URL is going to be public if you deploy this. Two layers of validation gate every request:
+
+**1. Twilio signature verification.** Every Twilio webhook is signed with HMAC-SHA1 over the request URL + sorted form params, using your `TWILIO_AUTH_TOKEN` as the key. The app validates the `X-Twilio-Signature` header on every `POST /twiml` and rejects invalid or missing signatures with `403`.
+
+**2. AccountSid allow-list.** The form body's `AccountSid` must equal the configured `TWILIO_ACCOUNT_SID`, otherwise `403`. Prevents your URL from being repurposed as a webhook for a different Twilio account.
+
+**Critical:** `PUBLIC_BASE_URL` must match the EXACT URL Twilio uses to call your webhook. Behind any TLS-terminating reverse proxy (Caddy, nginx, ALB, ngrok), the request reaches the app at `localhost:3000` but Twilio computed the signature against the public HTTPS URL. The signature won't match unless you set `PUBLIC_BASE_URL=https://your-public-domain.com`.
+
+### Service gates
+
+| Env var | Default | Effect |
+|---|---|---|
+| `SERVICE_ACTIVE` | `true` | When `false`, `/twiml` returns 503 and CR WebSocket upgrades are refused. Useful for soft-disabling on a long-running deploy without stopping the host. |
+| `DEV_BYPASS_SIGNATURE` | `false` | When `true`, skips Twilio signature validation entirely. Logs a startup warning. ONLY use for local curl-based smoke testing. **Never set in production.** |
+
+### Health probe
+
+`GET /healthz` returns liveness + version info:
+
+```json
+{
+  "ok": true,
+  "serviceActive": true,
+  "name": "voice-ai-conversation-relay-elevenlabs",
+  "version": "0.1.0",
+  "gitSha": "abc1234",
+  "nodeVersion": "v20.x.x",
+  "startedAt": "2026-04-27T..."
+}
+```
+
+`gitSha` resolves at startup via `git rev-parse --short HEAD`, or falls back to the `GIT_SHA` env var (set this in CI/deploy scripts where the git directory isn't available).
+
 ## Failure modes
 
 Cataloged in [docs/failure-modes.md](./docs/failure-modes.md) with trigger, symptom, detection, mitigation, and repro for each:
